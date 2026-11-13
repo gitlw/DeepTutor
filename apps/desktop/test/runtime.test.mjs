@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import http from 'node:http';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, chmod } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -25,6 +25,41 @@ test('source data cannot share the checkout', () => {
   const config = { schemaVersion: 1, mode: 'source', sourcePath: '/tmp/core', pythonPath: '/python', nodePath: '/node', runtimeHome: '/tmp/core/data' };
   assert.throws(() => validateConfig(config));
   assert.equal(validateConfig({ ...config, runtimeHome: '/tmp/data' }).runtimeHome, path.resolve('/tmp/data'));
+});
+
+test('macOS desktop startup discovers a user-installed CLI with a Finder PATH', { skip: process.platform !== 'darwin' }, async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'DeepTutor CLI test '));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const sourcePath = path.join(root, 'source');
+  const webPath = path.join(root, 'web');
+  const cli = path.join(root, '.local/bin/claude');
+  await mkdir(path.join(sourcePath, 'deeptutor_cli'), { recursive: true });
+  await mkdir(webPath);
+  await mkdir(path.dirname(cli), { recursive: true });
+  await writeFile(path.join(sourcePath, 'deeptutor_cli/main.py'), '');
+  await writeFile(path.join(webPath, 'server.js'), '');
+  await writeFile(cli, '#!/bin/sh\nprintf "fixture-claude\\n"\n');
+  await chmod(cli, 0o755);
+  const config = { schemaVersion: 1, mode: 'bundled', sourcePath, webPath,
+    nodePath: process.execPath, pythonPath: process.execPath, runtimeHome: path.join(root, 'workspace') };
+  // Capture the actual environment handed to a core process. Run in a child
+  // so the test's HOME/PATH never affect other concurrently running tests.
+  const script = `
+    import { execFileSync } from 'node:child_process';
+    import { SourceRuntime } from ${JSON.stringify(new URL('../src/runtime.mjs', import.meta.url).href)};
+    const runtime = new SourceRuntime();
+    runtime.group.run = async (_command, _args, { env }) => {
+      const version = execFileSync('claude', ['--version'], { env, encoding: 'utf8' }).trim();
+      throw new Error(version);
+    };
+    await runtime.start(${JSON.stringify(config)}, ${JSON.stringify(path.join(root, 'cache'))});
+    console.log(runtime.state.message);
+  `;
+  const output = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+    encoding: 'utf8', env: { ...process.env, HOME: root, PATH: '/usr/bin:/bin:/usr/sbin:/sbin' },
+    timeout: 10000,
+  });
+  assert.equal(output.trim(), 'fixture-claude');
 });
 
 test('update signatures bind version, checksum and architecture', () => {

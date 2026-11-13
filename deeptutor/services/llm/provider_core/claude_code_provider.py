@@ -24,6 +24,11 @@ from types import ModuleType
 from typing import Any
 import uuid
 
+from deeptutor.services.llm.claude_sdk import (
+    CLAUDE_INITIALIZATION_TIMEOUT,
+    create_transport,
+    local_cli_options,
+)
 from deeptutor.services.llm.provider_core.base import LLMProvider, LLMResponse
 from deeptutor.services.llm.provider_core.sdk_bridge import (
     _MCP_SERVER_NAME,
@@ -86,7 +91,7 @@ class _ClaudeCodeSession:
             name="claude-code-session-owner",
         )
         try:
-            async with asyncio.timeout(15):
+            async with asyncio.timeout(CLAUDE_INITIALIZATION_TIMEOUT):
                 await ready
         except BaseException:
             await session.close()
@@ -98,7 +103,7 @@ class _ClaudeCodeSession:
         return self._owner is not None and not self._owner.done()
 
     async def _owner_loop(self, sdk: ModuleType, options: Any, ready: asyncio.Future[None]) -> None:
-        client = sdk.ClaudeSDKClient(options=options)
+        client = sdk.ClaudeSDKClient(options=options, transport=create_transport(options))
         try:
             await client.connect()
             if not ready.done():
@@ -172,9 +177,9 @@ async def _no_interrupt() -> None:
 class ClaudeCodeProvider(LLMProvider):
     """Provider backed by the Claude Agent SDK (local Claude Code login).
 
-    Claude Code's own tools are disabled and the operator's Claude Code
-    settings, CLAUDE.md files and hooks are not loaded; DeepTutor's tool
-    schemas are exposed through an in-process SDK MCP server instead. When
+    Claude Code's own tools are disabled and ordinary Claude Code settings
+    and project files are not loaded; wrapper-managed hooks still run.
+    DeepTutor's tool schemas are exposed through an in-process SDK MCP server. When
     Claude calls one, the turn is interrupted and the call is returned as a
     regular ``tool_calls`` response so DeepTutor's dispatcher executes it.
     """
@@ -245,7 +250,9 @@ class ClaudeCodeProvider(LLMProvider):
             options = _build_options(
                 sdk, model, system_prompt, reasoning_effort, tools, cwd=self._workspace.name
             )
-            stream = sdk.query(prompt=_sdk_prompt(_prompt_input(conversation)), options=options)
+            prompt = _sdk_prompt(_prompt_input(conversation))
+            stream = sdk.query(prompt=prompt, options=options,
+                               transport=create_transport(options, prompt))
             try:
                 return await _consume_messages(
                     stream, on_content_delta=on_content_delta, label=_LABEL
@@ -527,10 +534,13 @@ def _build_options(
 ) -> Any:
     stripped_model = _strip_model_prefix(model)
     return sdk.ClaudeAgentOptions(
+        # Match model discovery and subagent invocation. Otherwise the SDK
+        # prefers its bundled CLI, which may use a different account/router.
+        **local_cli_options(),
         **({"model": stripped_model} if stripped_model else {}),
         system_prompt=_system_prompt_option(system_prompt, cwd),
-        # No built-in Claude Code tools and none of the operator's settings,
-        # CLAUDE.md files, hooks or plugins: this is a plain model endpoint.
+        # A plain model endpoint with no built-in tools or ordinary settings.
+        # A managed CLI wrapper can still mount its required startup hooks.
         cwd=cwd,
         permission_mode="dontAsk",
         extra_args={"strict-mcp-config": None},

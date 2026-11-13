@@ -10,6 +10,12 @@ Settings; no credentials or user data ship with the app. Optional external
 tools (Manim/LaTeX, partner CLIs, remote services) keep their usual
 requirements.
 
+On macOS, Finder launches provide a minimal `PATH`. The desktop runtime keeps
+its bundled Python and Node first, preserves inherited search paths, and adds
+`~/.local/bin`, `/opt/homebrew/bin`, `/opt/homebrew/sbin`, `/usr/local/bin`, and
+`/usr/local/sbin` so installed agent CLIs can be detected and invoked. CLIs in
+custom locations still need their directory on the app's inherited `PATH`.
+
 ## Editions
 
 | Target        | Name                                          | Short                   | Downloads                                                  |
@@ -77,7 +83,7 @@ cd apps/desktop
 npm ci
 npm run check && npm test
 npm run build:runtime -- --target macos-arm64   # snapshots this checkout's committed HEAD
-npm run smoke -- --target macos-arm64           # boots the bundled core with no developer tools on PATH
+npm run smoke -- --target macos-arm64           # boots the bundled core with Finder's minimal inherited PATH
 npm run package -- --target macos-arm64         # out/Open-DeepTutor-MacOS-Apple-Silicon-v<version>.dmg
 ```
 

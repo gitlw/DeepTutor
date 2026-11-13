@@ -62,8 +62,9 @@ class FakeClient:
     instances: list["FakeClient"] = []
     script: list[list[object]] = []
 
-    def __init__(self, options):
+    def __init__(self, options, transport=None):
         self.options = options
+        self.transport = transport
         self.prompts: list[str] = []
         self.interrupts = 0
         self.disconnected = False
@@ -106,6 +107,14 @@ def _install_fake_sdk(monkeypatch, **extra):
         **extra,
     )
     monkeypatch.setitem(sys.modules, "claude_agent_sdk", sdk)
+    monkeypatch.setattr(
+        "deeptutor.services.llm.provider_core.claude_code_provider.create_transport",
+        lambda options, prompt=None: SimpleNamespace(options=options, prompt=prompt),
+    )
+    monkeypatch.setattr(
+        "deeptutor.services.llm.claude_sdk.create_transport",
+        lambda options, prompt=None: SimpleNamespace(options=options, prompt=prompt),
+    )
     return sdk
 
 

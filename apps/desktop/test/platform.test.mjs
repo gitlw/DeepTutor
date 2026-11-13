@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { readdir } from 'node:fs/promises';
-import { agentMarker, edition, runtimeLayout, targetId } from '../src/platform.mjs';
+import { agentMarker, edition, runtimeLayout, runtimePath, targetId } from '../src/platform.mjs';
 import { canonicalManifest, verifyManifest } from '../src/bundles.mjs';
 
 test('each build target is named in full and in short', () => {
@@ -14,6 +14,22 @@ test('each build target is named in full and in short', () => {
 test('the user agent marker carries platform and architecture for the web UI', () => {
   assert.equal(agentMarker('1.7.1', 'darwin', 'x64'), 'OpenDeepTutor/1.7.1 (macOS; x64)');
   assert.equal(agentMarker('1.7.1', 'win32', 'x64'), 'OpenDeepTutor/1.7.1 (Windows; x64)');
+});
+
+test('runtime PATH preserves interpreter and user precedence on macOS', () => {
+  const result = runtimePath({ nodePath: '/bundle/node/bin/node', pythonPath: '/bundle/python/bin/python3' },
+    { platform: 'darwin', home: '/Users/test', inheritedPath: '/custom/bin:/usr/local/bin:/usr/bin:/custom/bin' });
+  const entries = result.split(':');
+  assert.deepEqual(entries.slice(0, 5), ['/bundle/node/bin', '/bundle/python/bin', '/custom/bin', '/usr/local/bin', '/usr/bin']);
+  assert.equal(entries.filter(entry => entry === '/usr/local/bin').length, 1);
+  assert.ok(entries.includes('/Users/test/.local/bin'));
+  assert.ok(entries.includes('/opt/homebrew/bin'));
+});
+
+test('Windows runtime PATH retains Windows paths without macOS directories', () => {
+  assert.equal(runtimePath({ nodePath: 'C:\\bundle\\node\\node.exe', pythonPath: 'C:\\bundle\\python\\python.exe' },
+    { platform: 'win32', inheritedPath: 'C:\\custom;C:\\Windows\\System32' }),
+  'C:\\bundle\\node;C:\\bundle\\python;C:\\custom;C:\\Windows\\System32');
 });
 
 test('every platform folder is a known target with a runtime layout', async () => {

@@ -204,6 +204,29 @@ async def probe_provider(
     structured: upstream bodies/exception strings can contain credentials or URLs.
     No configuration writes or billable inference calls are made here.
     """
+    if binding.replace("-", "_") == "claude_code":
+        from deeptutor.services.llm.claude_sdk import discover_models
+
+        try:
+            models = await discover_models()
+        except ImportError:
+            return {
+                "status": "dependency_missing",
+                "models": [],
+                "dependency": "claude-agent-sdk",
+            }
+        except (asyncio.TimeoutError, TimeoutError):
+            return {"status": "timeout", "models": []}
+        except Exception:
+            # CLI startup exceptions can carry credentials. A fallback catalog
+            # also cannot establish that this account's CLI actually started.
+            return {"status": "unavailable", "models": []}
+        if not models:
+            return {"status": "unavailable", "models": []}
+        return {
+            "status": "connected",
+            "models": [{"id": f"claude-code/{row['slug']}"} for row in models],
+        }
     if binding == "volcengine_speech":
         return {"status": "unavailable", "models": []}
     base_url = base_url.strip().rstrip("/")

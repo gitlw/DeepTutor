@@ -2031,9 +2031,19 @@ async def test_provider_connection(payload: ProviderProbePayload):
         return await probe_search_provider(
             payload.binding, payload.base_url, key, proxy=payload.proxy
         )
-    return await probe_provider(
+    result = await probe_provider(
         payload.binding, payload.base_url, key, payload.api_format, headers, payload.api_version
     )
+    if result.get("status") == "dependency_missing":
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Claude Code requires claude-agent-sdk in the DeepTutor Python environment. "
+                "Install the claude-code optional dependencies, then retry. "
+                "No provider URL or API key is required."
+            ),
+        )
+    return result
 
 
 @router.post("/fetch-models")

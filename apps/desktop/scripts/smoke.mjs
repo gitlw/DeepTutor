@@ -25,7 +25,8 @@ runtime.on('status', state => console.log(`${state.phase}: ${state.step ?? state
 try {
   const publicKey = await readFile(path.join(appRoot, 'assets/runtime-public.pem'), 'utf8');
   const installed = await installBundle(path.join(target.seed, 'runtime.json'), home, publicKey, console.log);
-  // Deliberately hide developer toolchains. Only bundled Python/Node are used.
+  // Match Finder's minimal inherited PATH. The runtime still adds optional
+  // CLI locations, but starts Python/Node through their bundled absolute paths.
   process.env.PATH = systemPath();
   await runtime.start(bundleConfig(installed.destination, path.join(home, 'workspace'), installed.manifest.runtimeId), path.join(home, 'cache'));
   assert.equal(runtime.state.phase, 'ready', runtime.state.message);
@@ -39,8 +40,8 @@ try {
   await runtime.stop();
   assert.equal(await probe(url), false);
   assert.equal(await probe(backendURL), false);
-  await writeFile(path.join(target.local, 'smoke-result.json'), JSON.stringify({ target: target.id, core: installed.manifest.runtimeId, frontend: 'passed', backend: 'passed', proxy: 'passed', shutdown: 'passed', developerPATH: 'absent' }, null, 2));
-  console.log(`PASS: the ${target.id} bundled runtime boots, serves UI/API, and cleans up with no developer tools on PATH.`);
+  await writeFile(path.join(target.local, 'smoke-result.json'), JSON.stringify({ target: target.id, core: installed.manifest.runtimeId, frontend: 'passed', backend: 'passed', proxy: 'passed', shutdown: 'passed', inheritedPATH: 'system-only' }, null, 2));
+  console.log(`PASS: the ${target.id} bundled runtime boots, serves UI/API, and cleans up with a minimal inherited PATH.`);
 } finally {
   await runtime.stop();
   log.end();

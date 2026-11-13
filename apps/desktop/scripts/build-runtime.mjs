@@ -54,6 +54,14 @@ if (!assembleOnly) {
   await writeFile(path.join(build, 'BUILD_COMMIT'), commit + '\n');
   run('uv', ['python', 'install', target.python.build, '--install-dir', path.join(target.local, 'python-downloads'), '--no-bin']);
   run('uv', ['pip', 'install', '--break-system-packages', '--python', python, ...(target.pip ?? []), '-r', path.join(build, 'requirements/full.txt')]);
+  // The desktop offers Claude Code subscription authentication in Settings.
+  // Its SDK is an optional source dependency, so full.txt alone omits it.
+  run(python, [path.join(build, 'scripts/install_extras.py'), 'claude-code'], {
+    cwd: build, env: { ...process.env, PIP_BREAK_SYSTEM_PACKAGES: '1' },
+  });
+  // install_extras is deliberately nonfatal for other deployment workflows;
+  // a desktop build must fail if it cannot ship the advertised provider.
+  run(python, ['-c', 'import claude_agent_sdk']);
   npm(['ci', '--legacy-peer-deps'], path.join(build, 'web'));
   npm(['run', 'build'], path.join(build, 'web'));
 }

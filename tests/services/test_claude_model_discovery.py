@@ -41,8 +41,9 @@ def sdk(monkeypatch):
     state = SimpleNamespace(closed=False, fail=False)
 
     class Client:
-        def __init__(self, options):
+        def __init__(self, options, transport=None):
             state.options = options
+            state.transport = transport
 
         async def __aenter__(self):
             self.owner = asyncio.current_task()
@@ -66,6 +67,7 @@ def sdk(monkeypatch):
         SimpleNamespace(ClaudeSDKClient=Client, ClaudeAgentOptions=lambda **kw: kw),
     )
     monkeypatch.setattr(claude_sdk.shutil, "which", lambda command: "/native/claude")
+    monkeypatch.setattr(claude_sdk, "create_transport", lambda options: "startup-buffer")
     return state
 
 
@@ -74,6 +76,7 @@ async def test_sdk_discovery_closes_in_owner_task_and_does_not_return_account_da
     models = await module._discover_sdk_models()
     assert models == claude_sdk.parse_models(ROWS)
     assert sdk.closed
+    assert sdk.transport == "startup-buffer"
     assert sdk.options["cli_path"] == "/native/claude"
     assert sdk.options["tools"] == []
     assert sdk.options["setting_sources"] == []

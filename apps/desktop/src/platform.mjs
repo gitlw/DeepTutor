@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { homedir } from 'node:os';
 
 // Everything that differs between macOS and Windows at run time lives here;
 // build-time differences live in platforms/<target>/.
@@ -43,9 +44,23 @@ export function systemTar() {
   return WINDOWS ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe') : '/usr/bin/tar';
 }
 
-/** A PATH that holds only operating system tools, so tests prove no developer toolchain is used. */
+/** A minimal inherited PATH with only operating system tools, matching Finder launches. */
 export function systemPath() {
   if (!WINDOWS) return '/usr/bin:/bin:/usr/sbin:/sbin';
   const root = process.env.SystemRoot ?? 'C:\\Windows';
   return [path.join(root, 'System32'), root, path.join(root, 'System32', 'Wbem')].join(';');
+}
+
+/** Keep bundled interpreters first, while making optional macOS CLIs visible to Finder launches. */
+export function runtimePath(config, {
+  inheritedPath = process.env.PATH ?? '', home = homedir(), platform = process.platform,
+} = {}) {
+  const paths = platform === 'win32' ? path.win32 : path.posix;
+  const entries = [paths.dirname(config.nodePath), paths.dirname(config.pythonPath),
+    ...inheritedPath.split(paths.delimiter)];
+  // Finder does not read shell startup files. Native Claude installs use
+  // ~/.local/bin; Homebrew and global npm installs commonly use these prefixes.
+  if (platform === 'darwin') entries.push(paths.join(home, '.local', 'bin'),
+    '/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin', '/usr/local/sbin');
+  return [...new Set(entries.filter(Boolean))].join(paths.delimiter);
 }
