@@ -182,7 +182,7 @@ class MasteryLoopPipeline(AgenticLoopPipeline):
                         "The current PDF-grounded objective's verified lesson is not prepared for this request. "
                         "Before teaching new subject matter or assessing this objective, call "
                         "mastery_prepare_lesson with its exact knowledge_point_id below and, when useful, a "
-                        "specific focus for the learner's next teaching or practice step. Use the matching "
+                        "specific focus for the learner's next teaching or quiz step (omit focus before mastery_assess). Use the matching "
                         "evidence it returns: partial evidence supports its covered teaching slice, but not "
                         "an unsupported assessment. This gate blocks unsupported teaching or assessment, NOT conversation "
                         "about teaching style, learner preferences, the previous verdict or outline changes: "

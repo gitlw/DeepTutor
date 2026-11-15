@@ -3868,7 +3868,7 @@ class MasteryPrepareLessonTool(BaseTool):
     def get_definition(self) -> ToolDefinition:
         return ToolDefinition(
             name="mastery_prepare_lesson",
-            description="Privately prepare source evidence for the next teaching or practice step within an objective; this does not display source pages to the learner. To intentionally show a teaching image, use rag with an exact source view and presentation=teaching; use presentation=reveal after an answer. Reuses validated evidence. A partial packet supports teaching only its covered material; use a specific focus to resolve the evidence needed for a question and its key. For requested exam questions, focus on actual questions and solutions in the selected question bank, not merely topic summaries. Administrative discussion does not require preparation. Uses only the path's selected materials.",
+            description="Privately prepare source evidence for the next teaching or practice step within an objective; this does not display source pages to the learner. To intentionally show a teaching image, use rag with an exact source view and presentation=teaching; use presentation=reveal after an answer. Reuses validated evidence. A partial packet supports teaching only its covered material. For mastery_quiz/mastery_grade, use a specific focus to resolve the evidence needed for a question and its key. mastery_assess is different: it needs an objective-scoped packet, so call this tool with NO focus first; focus packets and incomplete packets are rejected by mastery_assess. For requested exam questions, work from actual questions and solutions in the selected question bank, not merely topic summaries. Administrative discussion does not require preparation. Uses only the path's selected materials.",
             parameters=[
                 ToolParameter(
                     name="knowledge_point_id",
@@ -3880,7 +3880,7 @@ class MasteryPrepareLessonTool(BaseTool):
                     type="string",
                     required=False,
                     sensitive=True,
-                    description="Optional next teaching step or assessment task within this objective, at most 600 characters. Include the requested source/task when relevant. Do not widen the objective or invent examination requirements.",
+                    description="Optional next teaching step, or the question/key to resolve for mastery_quiz, within this objective, at most 600 characters. Omit focus before mastery_assess. Include the requested source/task when relevant. Do not widen the objective or invent examination requirements.",
                 ),
                 ToolParameter(
                     name="refresh",
