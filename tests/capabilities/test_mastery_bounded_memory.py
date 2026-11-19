@@ -494,7 +494,7 @@ async def test_the_backoff_expires(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_other_failures_are_still_retried_every_turn(monkeypatch):
+async def test_an_invalid_memory_is_not_retried_on_every_turn(monkeypatch):
     calls = []
 
     async def stream(_self, **kwargs):
@@ -511,5 +511,5 @@ async def test_other_failures_are_still_retried_every_turn(monkeypatch):
                 model="reasoning-model", context_window=272000, max_tokens=4096
             ),
         )
-    assert len(calls) == 2
+    assert len(calls) == 1
     store.update_summary.assert_not_awaited()

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 import json
+import logging
 import time
 from typing import Any
 
@@ -47,9 +48,13 @@ MEMORY_NOTICE = (
 )
 
 
+logger = logging.getLogger(__name__)
+
 # A truncated reply is deterministic for a given model and output limit: the
 # next turn would pay the same wait (tens of seconds on a reasoning model) and
 # fail the same way. Remember it for a while instead of retrying every turn.
+# The same holds for a reply that fails validation: each retry re-sends the whole
+# unsummarized backlog, which grows with every failed turn.
 _TRUNCATION_BACKOFF_SECONDS = 15 * 60
 _TRUNCATION_BACKOFF_MAX = 256
 _truncation_backoff: OrderedDict[tuple[str, str, int], float] = OrderedDict()
@@ -301,4 +306,7 @@ class MasteryContextBuilder(ContextBuilder):
         except (ValueError, TypeError) as exc:
             # ContextBuilder retries on a later turn; its watermark stays put.
             reason = "invalid JSON" if isinstance(exc, json.JSONDecodeError) else str(exc)
+            # Reasons are fixed validator strings, never transcript content.
+            logger.warning("Tutoring memory rejected: %s", reason)
+            _start_backoff(backoff_key)
             raise ValueError(f"Tutoring memory: {reason}") from exc
