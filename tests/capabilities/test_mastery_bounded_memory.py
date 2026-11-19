@@ -513,3 +513,55 @@ async def test_an_invalid_memory_is_not_retried_on_every_turn(monkeypatch):
         )
     assert len(calls) == 1
     store.update_summary.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_large_backlog_is_condensed_in_small_oldest_first_batches(monkeypatch):
+    """One huge memory call is slow and fails validation more often as the backlog grows."""
+    from deeptutor.capabilities.mastery import memory as memory_module
+    from deeptutor.capabilities.mastery.memory import archive_id
+    from deeptutor.services.session.model_history import history_groups
+
+    batches = []
+
+    async def stream(_self, **kwargs):
+        kwargs["outcome"].finish_reason = "stop"
+        ids = [archive_id(g) for g in history_groups(builder._summary_rows)]
+        batches.append(ids)
+        yield memory(ids)
+
+    monkeypatch.setattr(_ContextSummaryAgent, "stream_llm", stream)
+    store = store_for(records(n=20))
+    builder = MasteryContextBuilder(store)
+    result = await builder.build(
+        session_id="s",
+        llm_config=SimpleNamespace(model="m", context_window=272000, max_tokens=8192),
+    )
+
+    batch = memory_module._MAX_ARCHIVES_PER_SUMMARY
+    assert batches == [[f"hs-tutor-{2 * i + 2}" for i in range(batch)]]
+    store.update_summary.assert_awaited_once()
+    assert store.update_summary.await_args.args[2] == 2 * batch
+    assert result.token_count <= result.budget
+
+
+@pytest.mark.asyncio
+async def test_relisting_a_previously_covered_exchange_is_accepted(monkeypatch):
+    """Models echo retained IDs into covered_archive_ids; that is not an invention."""
+    from deeptutor.capabilities.mastery.memory import archive_id
+    from deeptutor.services.session.model_history import history_groups
+
+    async def stream(_self, **kwargs):
+        kwargs["outcome"].finish_reason = "stop"
+        assert '"hs-tutor-4"' in kwargs["user_prompt"]  # the new IDs are listed explicitly
+        batch = [archive_id(g) for g in history_groups(builder._summary_rows)]
+        yield memory(["hs-tutor-2", *batch])
+
+    monkeypatch.setattr(_ContextSummaryAgent, "stream_llm", stream)
+    store = store_for(records(n=10), summary=memory(["hs-tutor-2"]), watermark=2)
+    builder = MasteryContextBuilder(store)
+    await builder.build(
+        session_id="s",
+        llm_config=SimpleNamespace(model="m", context_window=272000, max_tokens=8192),
+    )
+    store.update_summary.assert_awaited_once()

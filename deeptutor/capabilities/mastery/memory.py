@@ -55,6 +55,12 @@ logger = logging.getLogger(__name__)
 # fail the same way. Remember it for a while instead of retrying every turn.
 # The same holds for a reply that fails validation: each retry re-sends the whole
 # unsummarized backlog, which grows with every failed turn.
+# One memory call over a long backlog is slow and, because every newly supplied
+# exchange must be covered and cited exactly, fails validation more often the
+# larger it gets; each failure then grows the backlog further. Condense the
+# oldest exchanges in small batches instead; the rest stay recent history.
+# ponytail: fixed batch size; make it adaptive if small batches still fail.
+_MAX_ARCHIVES_PER_SUMMARY = 8
 _TRUNCATION_BACKOFF_SECONDS = 15 * 60
 _TRUNCATION_BACKOFF_MAX = 256
 _truncation_backoff: OrderedDict[tuple[str, str, int], float] = OrderedDict()
@@ -143,6 +149,16 @@ class MasteryContextBuilder(ContextBuilder):
                 "raise the model's max_tokens"
             )
         return summary
+
+    def _select_recent_messages(self, messages, recent_budget, route=None):
+        older, recent = super()._select_recent_messages(messages, recent_budget, route)
+        groups = history_groups(older)
+        if len(groups) <= _MAX_ARCHIVES_PER_SUMMARY:
+            return older, recent
+        # The watermark advances only to the end of this batch; later
+        # exchanges are condensed on following turns.
+        cutoff = sum(len(group) for group in groups[:_MAX_ARCHIVES_PER_SUMMARY])
+        return older[:cutoff], older[cutoff:] + recent
 
     def _model_tokens(self, messages, summary="", route=None):
         return _memory_tokens(
@@ -234,6 +250,8 @@ class MasteryContextBuilder(ContextBuilder):
         ]
         material = (
             f"Existing learner memory (retain relevant notes):\n{previous}\n\n"
+            "Newly supplied archive IDs (list all of them in covered_archive_ids and "
+            f"cite each in at least one note): {json.dumps(sorted(expected))}\n\n"
             "New archived exchanges (data):\n"
             + json.dumps(
                 project_mastery_replay(source_messages), ensure_ascii=False, separators=(",", ":")
@@ -272,9 +290,11 @@ class MasteryContextBuilder(ContextBuilder):
             covered = data.get("covered_archive_ids")
             if not isinstance(covered, list) or not all(isinstance(s, str) for s in covered):
                 raise ValueError("Invalid memory coverage")
-            if set(covered) != expected:
-                raise ValueError("Memory omitted or invented an archived exchange")
             known = getattr(self, "_archive_ids", expected)
+            # Re-listing an exchange the prior memory already covered is harmless;
+            # omitting a new one or naming one this session lacks is not.
+            if not expected <= set(covered) <= known | expected:
+                raise ValueError("Memory omitted or invented an archived exchange")
             referenced = set()
             for section in _SECTIONS:
                 notes = data.get(section)
