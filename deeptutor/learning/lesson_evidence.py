@@ -250,8 +250,15 @@ def selected_scope(topic: Any, progress: Any, kp_id: str) -> dict[str, list[str]
             if resource is None:
                 raise LessonUnavailable("Access to a selected knowledge base is unavailable.")
             raw = Path(resource.base_dir) / resource.name / "raw"
-            if not any(p.suffix.lower() == ".pdf" for p in raw.rglob("*") if p.is_file()):
+            files = [p for p in raw.rglob("*") if p.is_file()]
+            if not any(p.suffix.lower() == ".pdf" for p in files):
                 continue  # Text-only KBs retain their existing tutoring route.
+            # Page evidence can only cite PDF pages; an objective that names a
+            # non-PDF file in a mixed KB (code, README, images) could never get a
+            # complete packet, so it keeps the text route instead.
+            named = {t.casefold() for t in re.findall(r"[\w.-]+\.\w+", kp.name)}
+            if any(p.suffix.lower() != ".pdf" and p.name.casefold() in named for p in files):
+                continue
             scope[source.source_id] = None
         else:
             kb = str(source.metadata.get("kb_name") or source.metadata.get("knowledge_base") or "")

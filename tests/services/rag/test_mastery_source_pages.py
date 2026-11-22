@@ -297,6 +297,20 @@ def test_physical_pages_beyond_64_and_unlocated_text_preserved(material):
     assert pixels.width <= 2400 and pixels.width * pixels.height < 3_910_000
 
 
+def test_mixed_kb_objective_naming_non_pdf_file_keeps_text_route(material):
+    (material.raw / "transformer.py").write_text("class Transformer: ...", encoding="utf-8")
+    progress = material.store.load("path")
+    material.store.put_topic(
+        TopicMetadata(path_id="path"),
+        [TopicSource(id="s", kind="knowledge_base", label="Repo", source_id="selected")],
+    )
+    topic = material.store.get_topic("path")
+    assert lessons.selected_scope(topic, progress, "kp") == {"selected": None}
+    kp = progress.modules[0].knowledge_points[0]
+    kp.name = "How the repo maps onto the architecture (Transformer.py, README)"
+    assert lessons.selected_scope(topic, progress, "kp") == {}
+
+
 def test_text_only_objectives_keep_existing_route_and_old_pdf_question_is_rejected(material):
     material.path.unlink()
     (material.raw / "notes.txt").write_text("Text-only lesson", encoding="utf-8")
