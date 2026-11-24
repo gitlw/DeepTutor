@@ -300,6 +300,27 @@ based on evidence; there is no need to run every command for every problem.
    reproduction, expected versus actual behavior, relevant redacted errors,
    checks already tried, and the next useful investigation.
 
+### Providers behind an HTTP proxy
+
+For OpenAI-compatible endpoints that require a forward proxy, set
+`http_proxy_by_host` in `<runtime-home>/data/user/settings/system.json` and
+restart DeepTutor. Keys are exact destination hostnames; unrelated providers
+and loopback traffic retain their existing routing. For example:
+
+```json
+{
+  "http_proxy_by_host": {
+    "gateway.example.com": "http://127.0.0.1:10054"
+  }
+}
+```
+
+Keep the provider's original API URL. The SDK uses HTTP proxy requests, and
+model discovery uses the same proxy. The native chat engine selects SDK
+compatibility execution for a proxied provider. The Settings LLM test makes
+one completion attempt with a 30-second deadline; it does not use chat's
+long retry budget. Context metadata lookup has a separate 12-second limit.
+
 ## Implementation and verification
 
 - [deeptutor_cli/setup_config.py](../deeptutor_cli/setup_config.py)

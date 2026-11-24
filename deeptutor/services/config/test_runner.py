@@ -19,13 +19,11 @@ from .provider_runtime import (
     supported_search_providers_hint,
 )
 
+LLM_PROBE_TIMEOUT_SECONDS = 30.0
+
 
 def _redact(value: str) -> str:
-    if not value:
-        return "(empty)"
-    if len(value) <= 8:
-        return "****"
-    return f"{value[:4]}...{value[-4:]}"
+    return "***" if value else "(empty)"
 
 
 def _coerce_int(value: Any, default: int, *, minimum: int = 1) -> int:
@@ -258,13 +256,23 @@ class ConfigTestRunner:
         run.emit("info", f"Token options: {json.dumps(token_kwargs)}")
         if llm_config.reasoning_effort:
             run.emit("info", f"Reasoning effort: {llm_config.reasoning_effort}")
-        response = await complete_with_config(
-            llm_config,
-            prompt="Reply with OK.",
-            system_prompt="This is a connection test. Respond briefly.",
-            temperature=temperature,
-            **token_kwargs,
-        )
+        try:
+            response = await asyncio.wait_for(
+                complete_with_config(
+                    llm_config,
+                    prompt="Reply with OK.",
+                    system_prompt="This is a connection test. Respond briefly.",
+                    temperature=temperature,
+                    max_retries=0,
+                    **token_kwargs,
+                ),
+                timeout=LLM_PROBE_TIMEOUT_SECONDS,
+            )
+        except TimeoutError as exc:
+            raise ValueError(
+                f"Model connection test timed out after {LLM_PROBE_TIMEOUT_SECONDS:g} seconds. "
+                "Check the provider URL and network proxy."
+            ) from exc
         snippet = (response or "").strip()
         run.emit("response", "Received LLM response.", snippet=snippet[:400])
         if not snippet:

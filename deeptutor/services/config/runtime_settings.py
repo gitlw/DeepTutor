@@ -28,6 +28,9 @@ DEFAULT_SYSTEM_SETTINGS: dict[str, Any] = {
     "cors_origin": "",
     "cors_origins": [],
     "disable_ssl_verify": False,
+    # Exact destination hosts that require an HTTP forward proxy. This avoids
+    # routing unrelated providers or the desktop's loopback services through it.
+    "http_proxy_by_host": {},
     "chat_attachment_dir": "",
     # Enable the restricted-subprocess code-execution sandbox (the `exec` /
     # unified `exec` tool the office skills — docx/pdf/pptx/xlsx — run on).
@@ -1367,6 +1370,8 @@ class RuntimeSettingsService:
         raw_guard = settings.get("security_guard")
         guard = raw_guard if isinstance(raw_guard, dict) else {}
         guard_defaults = DEFAULT_SYSTEM_SETTINGS["security_guard"]
+        raw_proxies = settings.get("http_proxy_by_host")
+        proxies = raw_proxies if isinstance(raw_proxies, dict) else {}
         return {
             "version": 1,
             "version_check_enabled": _coerce_bool(settings.get("version_check_enabled"), True),
@@ -1378,6 +1383,14 @@ class RuntimeSettingsService:
             "cors_origin": _string(settings.get("cors_origin")),
             "cors_origins": _coerce_origins(settings.get("cors_origins")),
             "disable_ssl_verify": _coerce_bool(settings.get("disable_ssl_verify"), False),
+            "http_proxy_by_host": {
+                host.strip().lower(): proxy.strip()
+                for host, proxy in proxies.items()
+                if isinstance(host, str)
+                and host.strip()
+                and isinstance(proxy, str)
+                and proxy.strip()
+            },
             "chat_attachment_dir": _string(settings.get("chat_attachment_dir")),
             "sandbox_allow_subprocess": _coerce_bool(
                 settings.get("sandbox_allow_subprocess"), True

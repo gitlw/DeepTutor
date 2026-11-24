@@ -6,6 +6,7 @@ import logging
 import os
 import threading
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 import uuid
 
 import httpx
@@ -114,6 +115,18 @@ def _uses_openrouter(spec: "ProviderSpec | None", api_base: str | None) -> bool:
     return bool(api_base and "openrouter" in api_base.lower())
 
 
+def proxy_for_url(base_url: str | None) -> str | None:
+    """Resolve an explicit proxy for this destination host only."""
+    if not base_url:
+        return None
+    try:
+        host = urlsplit(base_url).hostname
+    except ValueError:
+        return None
+    proxies = load_system_settings().get("http_proxy_by_host", {})
+    return proxies.get(host) if isinstance(proxies, dict) else None
+
+
 def openai_sdk_client_kwargs(
     *,
     api_key: str | None,
@@ -147,7 +160,19 @@ def openai_sdk_client_kwargs(
     }
     if sdk_max_retries is not None:
         kwargs["max_retries"] = sdk_max_retries
-    if disable_ssl_verify is None:
+    proxy = proxy_for_url(base_url)
+    if proxy:
+        # Mount only this host: redirects to other providers must not inherit it.
+        verify = not (
+            disable_ssl_verify_enabled() if disable_ssl_verify is None else disable_ssl_verify
+        )
+        transport = httpx.AsyncHTTPTransport(proxy=proxy, verify=verify)
+        http_client = httpx.AsyncClient(
+            mounts={f"all://{urlsplit(base_url).hostname}": transport},
+            verify=verify,
+            timeout=httpx.Timeout(600, connect=5),
+        )
+    elif disable_ssl_verify is None:
         http_client = build_openai_http_client()
     elif disable_ssl_verify:
         http_client = httpx.AsyncClient(verify=False)  # nosec B501
@@ -164,5 +189,6 @@ __all__ = [
     "disable_ssl_verify_enabled",
     "openai_client_kwargs",
     "openai_sdk_client_kwargs",
+    "proxy_for_url",
     "sanitize_invalid_ssl_env",
 ]
