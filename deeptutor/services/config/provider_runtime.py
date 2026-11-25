@@ -282,6 +282,17 @@ EMBEDDING_PROVIDERS: dict[str, EmbeddingProviderSpec] = {
         max_batch_items=20,
         multimodal=True,
     ),
+    "vertex": EmbeddingProviderSpec(
+        label="Vertex AI (:predict)",
+        adapter="vertex",
+        mode="direct",
+        default_api_base="",
+        keywords=(),
+        is_local=False,
+        default_model="text-embedding-005",
+        default_dim=768,
+        max_batch_items=16,
+    ),
     "custom": EmbeddingProviderSpec(
         label="OpenAI Compatible",
         mode="direct",

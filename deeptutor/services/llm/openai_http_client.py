@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import ssl
 import threading
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -115,16 +116,57 @@ def _uses_openrouter(spec: "ProviderSpec | None", api_base: str | None) -> bool:
     return bool(api_base and "openrouter" in api_base.lower())
 
 
-def proxy_for_url(base_url: str | None) -> str | None:
-    """Resolve an explicit proxy for this destination host only."""
-    if not base_url:
+def _host_setting(name: str, url: str | None) -> str | None:
+    """Look up a per-destination-host system setting (exact hostname match)."""
+    if not url:
         return None
     try:
-        host = urlsplit(base_url).hostname
+        host = urlsplit(url).hostname
     except ValueError:
         return None
-    proxies = load_system_settings().get("http_proxy_by_host", {})
-    return proxies.get(host) if isinstance(proxies, dict) else None
+    table = load_system_settings().get(name, {})
+    return table.get(host) if isinstance(table, dict) else None
+
+
+def proxy_for_url(base_url: str | None) -> str | None:
+    """Resolve an explicit proxy for this destination host only."""
+    return _host_setting("http_proxy_by_host", base_url)
+
+
+def client_cert_for_url(base_url: str | None) -> str | None:
+    """Path of the mTLS client PEM (cert + key) for this destination host only."""
+    path = _host_setting("client_cert_by_host", base_url)
+    return os.path.expanduser(path) if path else None
+
+
+def tls_verify_for_url(base_url: str | None, verify: bool = True) -> "ssl.SSLContext | bool":
+    """``verify`` argument for httpx/aiohttp: an mTLS context if one is configured.
+
+    The PEM is read on every call, so a rotated agent cert is picked up the next
+    time a client is built.
+    """
+    cert = client_cert_for_url(base_url)
+    if not cert:
+        return verify
+    ctx = ssl.create_default_context()
+    if not verify:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    try:
+        ctx.load_cert_chain(cert)
+    except (OSError, ssl.SSLError) as exc:
+        raise LLMConfigError(f"Cannot load client certificate {cert} for mTLS: {exc}") from exc
+    return ctx
+
+
+def aiohttp_request_options(url: str) -> dict[str, Any]:
+    """Per-request proxy / mTLS kwargs for ``aiohttp`` calls to this host."""
+    options: dict[str, Any] = {}
+    if proxy := proxy_for_url(url):
+        options["proxy"] = proxy
+    if client_cert_for_url(url):
+        options["ssl"] = tls_verify_for_url(url, not disable_ssl_verify_enabled())
+    return options
 
 
 def openai_sdk_client_kwargs(
@@ -161,12 +203,14 @@ def openai_sdk_client_kwargs(
     if sdk_max_retries is not None:
         kwargs["max_retries"] = sdk_max_retries
     proxy = proxy_for_url(base_url)
-    if proxy:
+    if proxy or client_cert_for_url(base_url):
         # Mount only this host: redirects to other providers must not inherit it.
         verify = not (
             disable_ssl_verify_enabled() if disable_ssl_verify is None else disable_ssl_verify
         )
-        transport = httpx.AsyncHTTPTransport(proxy=proxy, verify=verify)
+        transport = httpx.AsyncHTTPTransport(
+            proxy=proxy, verify=tls_verify_for_url(base_url, verify)
+        )
         http_client = httpx.AsyncClient(
             mounts={f"all://{urlsplit(base_url).hostname}": transport},
             verify=verify,
@@ -189,6 +233,9 @@ __all__ = [
     "disable_ssl_verify_enabled",
     "openai_client_kwargs",
     "openai_sdk_client_kwargs",
+    "aiohttp_request_options",
+    "client_cert_for_url",
     "proxy_for_url",
+    "tls_verify_for_url",
     "sanitize_invalid_ssl_env",
 ]

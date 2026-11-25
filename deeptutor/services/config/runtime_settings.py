@@ -31,6 +31,9 @@ DEFAULT_SYSTEM_SETTINGS: dict[str, Any] = {
     # Exact destination hosts that require an HTTP forward proxy. This avoids
     # routing unrelated providers or the desktop's loopback services through it.
     "http_proxy_by_host": {},
+    # Exact destination hosts that require an mTLS client certificate: host ->
+    # path of one PEM holding cert + key (e.g. Meta AI Gateway agent certs).
+    "client_cert_by_host": {},
     "chat_attachment_dir": "",
     # Enable the restricted-subprocess code-execution sandbox (the `exec` /
     # unified `exec` tool the office skills — docx/pdf/pptx/xlsx — run on).
@@ -1372,6 +1375,8 @@ class RuntimeSettingsService:
         guard_defaults = DEFAULT_SYSTEM_SETTINGS["security_guard"]
         raw_proxies = settings.get("http_proxy_by_host")
         proxies = raw_proxies if isinstance(raw_proxies, dict) else {}
+        raw_certs = settings.get("client_cert_by_host")
+        certs = raw_certs if isinstance(raw_certs, dict) else {}
         return {
             "version": 1,
             "version_check_enabled": _coerce_bool(settings.get("version_check_enabled"), True),
@@ -1390,6 +1395,14 @@ class RuntimeSettingsService:
                 and host.strip()
                 and isinstance(proxy, str)
                 and proxy.strip()
+            },
+            "client_cert_by_host": {
+                host.strip().lower(): path.strip()
+                for host, path in certs.items()
+                if isinstance(host, str)
+                and host.strip()
+                and isinstance(path, str)
+                and path.strip()
             },
             "chat_attachment_dir": _string(settings.get("chat_attachment_dir")),
             "sandbox_allow_subprocess": _coerce_bool(
@@ -1476,7 +1489,7 @@ class RuntimeSettingsService:
                 "redis_url": _string(coordination.get("redis_url")),
                 "key_prefix": key_prefix,
                 "lease_ttl_seconds": _coerce_clamped_int(
-                    coordination.get("lease_ttl_seconds"), 30, 10, 300
+                    coordination.get("lease_ttl_seconds"), 30, 10, 3600
                 ),
                 "renew_interval_seconds": _coerce_clamped_int(
                     coordination.get("renew_interval_seconds"), 10, 1, 100

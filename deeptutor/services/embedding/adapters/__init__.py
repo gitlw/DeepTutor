@@ -14,6 +14,7 @@ from .nvidia_nim import NvidiaNIMEmbeddingAdapter
 from .ollama import OllamaEmbeddingAdapter
 from .openai_compatible import OpenAICompatibleEmbeddingAdapter
 from .openai_sdk import OpenAISDKEmbeddingAdapter
+from .vertex import VertexPredictEmbeddingAdapter
 
 ADAPTER_BACKENDS: dict[str, type[BaseEmbeddingAdapter]] = {
     "openai_compat": OpenAICompatibleEmbeddingAdapter,
@@ -24,6 +25,7 @@ ADAPTER_BACKENDS: dict[str, type[BaseEmbeddingAdapter]] = {
     "dashscope_native": DashScopeMultiModalEmbeddingAdapter,
     "gemini": GeminiEmbeddingAdapter,
     "nvidia_nim": NvidiaNIMEmbeddingAdapter,
+    "vertex": VertexPredictEmbeddingAdapter,
 }
 
 __all__ = [
@@ -37,6 +39,7 @@ __all__ = [
     "DashScopeMultiModalEmbeddingAdapter",
     "GeminiEmbeddingAdapter",
     "NvidiaNIMEmbeddingAdapter",
+    "VertexPredictEmbeddingAdapter",
     "JinaEmbeddingAdapter",
     "CohereEmbeddingAdapter",
     "OllamaEmbeddingAdapter",

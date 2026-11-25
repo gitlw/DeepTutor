@@ -11,7 +11,7 @@ import requests
 
 from deeptutor.services.llm.cloud_provider import _auth_binding, _get_aiohttp_connector
 from deeptutor.services.llm.minimax_models import prioritize_model_names
-from deeptutor.services.llm.openai_http_client import proxy_for_url
+from deeptutor.services.llm.openai_http_client import aiohttp_request_options
 from deeptutor.services.llm.utils import build_auth_headers, collect_model_names
 
 
@@ -278,7 +278,7 @@ async def probe_provider(
                     headers=headers,
                     params=dict(params) or None,
                     allow_redirects=False,
-                    proxy=proxy_for_url(url),
+                    **aiohttp_request_options(url),
                 ) as response:
                     if response.status in {401, 403}:
                         return {

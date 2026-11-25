@@ -46,9 +46,10 @@ def compatibility_reason(config: Any) -> str:
 
     if load_system_settings()["disable_ssl_verify"]:
         return "custom TLS configuration"
-    from deeptutor.services.llm.openai_http_client import proxy_for_url
+    from deeptutor.services.llm.openai_http_client import client_cert_for_url, proxy_for_url
 
-    if proxy_for_url(config.effective_url or config.base_url):
+    url = config.effective_url or config.base_url
+    if proxy_for_url(url) or client_cert_for_url(url):
         return "custom proxy or certificate configuration"
     return ""
 

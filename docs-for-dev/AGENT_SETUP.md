@@ -321,6 +321,25 @@ compatibility execution for a proxied provider. The Settings LLM test makes
 one completion attempt with a 30-second deadline; it does not use chat's
 long retry budget. Context metadata lookup has a separate 12-second limit.
 
+### Providers that require an mTLS client certificate
+
+For endpoints that authenticate with a client certificate (for example Meta's
+AI Gateway from a devserver), map the destination hostname to one PEM holding
+the certificate and key in `system.json`:
+
+```json
+{
+  "client_cert_by_host": {
+    "vertex.ai-gateway.fbinfra.net": "/path/to/agent_x509/pi_user.pem"
+  }
+}
+```
+
+Only that exact host presents the certificate. The PEM is re-read whenever a
+client is built, so a rotated certificate is used by the next turn. The native
+chat engine selects SDK compatibility execution for such a provider. It
+combines with `http_proxy_by_host`.
+
 ## Implementation and verification
 
 - [deeptutor_cli/setup_config.py](../deeptutor_cli/setup_config.py)

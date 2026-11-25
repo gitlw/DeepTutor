@@ -8,7 +8,10 @@ import httpx
 
 from deeptutor.services.embedding.request_options import should_send_embedding_dimensions
 from deeptutor.services.llm.error_mapping import parse_retry_after_seconds
-from deeptutor.services.llm.openai_http_client import disable_ssl_verify_enabled
+from deeptutor.services.llm.openai_http_client import (
+    disable_ssl_verify_enabled,
+    tls_verify_for_url,
+)
 
 from .base import (
     BaseEmbeddingAdapter,
@@ -241,7 +244,8 @@ class OpenAICompatibleEmbeddingAdapter(BaseEmbeddingAdapter):
         for attempt in range(1 + max(self._MAX_RETRIES, 10)):
             try:
                 async with httpx.AsyncClient(
-                    timeout=timeout, verify=not disable_ssl_verify_enabled()
+                    timeout=timeout,
+                    verify=tls_verify_for_url(url, not disable_ssl_verify_enabled()),
                 ) as client:
                     response = await client.post(url, json=payload, headers=headers)
 

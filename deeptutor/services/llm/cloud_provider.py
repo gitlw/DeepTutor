@@ -19,7 +19,7 @@ from deeptutor.services.config import load_system_settings
 from deeptutor.services.provider_registry import effective_backend, find_by_name
 
 from .minimax_models import prioritize_model_names
-from .openai_http_client import proxy_for_url
+from .openai_http_client import aiohttp_request_options
 from .utils import build_auth_headers, collect_model_names
 
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ async def fetch_models(
     ) as session:
         try:
             url = f"{base_url}/models"
-            async with session.get(url, headers=headers, proxy=proxy_for_url(url)) as resp:
+            async with session.get(url, headers=headers, **aiohttp_request_options(url)) as resp:
                 if resp.status == 200:
                     payload = await resp.json()
                     if isinstance(payload, Mapping):
