@@ -30,6 +30,7 @@
  * three things a chat turn reports.
  */
 
+import type { Translate } from "@/shared/i18n/translate";
 import type { OrbState } from "@/vendor/thinking-orbs";
 
 import type { ActivityState } from "@/shared/ui/activity-state";
@@ -37,7 +38,7 @@ import type { ActivityState } from "@/shared/ui/activity-state";
 import type { BookProgress, StageId } from "@/lib/book-progress";
 import type { Book, GenerationSummary, Page, Spine } from "@/lib/book-types";
 
-export type Translate = (key: string, options?: Record<string, unknown>) => string;
+export type { Translate } from "@/shared/i18n/translate";
 
 /** Where the book as a whole stands. */
 export type BookPhase =

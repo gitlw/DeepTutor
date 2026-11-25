@@ -1,3 +1,4 @@
+import type { Translate } from '@/shared/i18n/translate'
 import { addDays, dateKey, formatDate, fromDateKey, type DateKey } from './dates'
 
 /**
@@ -174,9 +175,6 @@ export function detectPreset(text: string | null | undefined, start: Date): Repe
       : 'monthly'
   return 'yearly'
 }
-
-type Translate = (key: string, options?: Record<string, unknown>) => string
-
 function weekdayName(day: number, locale: string, width: 'long' | 'short'): string {
   // 2023-01-01 was a Sunday.
   return formatDate(new Date(2023, 0, 1 + day), locale, { weekday: width })

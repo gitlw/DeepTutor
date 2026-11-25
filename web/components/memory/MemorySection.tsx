@@ -1,5 +1,6 @@
 "use client";
 
+import type { Translate } from "@/shared/i18n/translate";
 import Tooltip from "@/shared/ui/Tooltip";
 import { browserStorage } from "@/shared/storage";
 
@@ -578,7 +579,7 @@ interface TabStripProps {
   onChange: (tab: Tab) => void;
   l2Count: number;
   l3Count: number;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function TabStrip({ tab, onChange, l2Count, l3Count, t }: TabStripProps) {
@@ -651,7 +652,7 @@ export interface L1ViewProps {
   focusRef: string | null;
   onClearFocus: () => void;
   onToast: (msg: string) => void;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
   // When true, the surface pill bar is hidden — the parent renders its own
   // surface picker (e.g. a left rail in the workbench layout).
   compact?: boolean;
@@ -944,7 +945,7 @@ interface ModeStripProps {
   mode: L1Mode;
   setMode: (m: L1Mode) => void;
   surface: Surface;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function ModeStrip({ mode, setMode, surface, t }: ModeStripProps) {
@@ -986,7 +987,7 @@ interface SnapshotListProps {
   pendingByEntity: Map<string, ChangeEntryDTO["kind"]>;
   focusRef: string | null;
   onClearFocus: () => void;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function SnapshotList({
@@ -1055,7 +1056,7 @@ interface EntityRowProps {
   ent: Entity;
   focused: boolean;
   pendingKind: ChangeEntryDTO["kind"] | null;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function EntityRow({ surface, ent, focused, pendingKind, t }: EntityRowProps) {
@@ -1131,7 +1132,7 @@ function PendingBadge({
   t,
 }: {
   kind: ChangeEntryDTO["kind"];
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }) {
   const map = {
     added: {
@@ -1167,7 +1168,7 @@ interface ChangesListProps {
   loading: boolean;
   changes: ChangeEntryDTO[];
   pending: ChangeEntryDTO[];
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function ChangesList({ loading, changes, pending, t }: ChangesListProps) {
@@ -1254,7 +1255,7 @@ function ChangeGlyph({ kind }: { kind: ChangeEntryDTO["kind"] }) {
 interface KbQueriesListProps {
   loading: boolean;
   queries: KbQueryDTO[];
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function KbQueriesList({ loading, queries, t }: KbQueriesListProps) {
@@ -1359,7 +1360,7 @@ interface DocPaneProps {
   onSave: () => void;
   onUpdate: () => void;
   onEntityLinkClick: (e: React.MouseEvent<HTMLDivElement>) => void;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function DocPane({
@@ -1460,7 +1461,7 @@ function DocPane({
 interface StreamPanelProps {
   stages: StreamStage[];
   onDismiss: () => void;
-  t: (key: string, opts?: Record<string, unknown>) => string;
+  t: Translate;
 }
 
 function StreamPanel({ stages, onDismiss, t }: StreamPanelProps) {

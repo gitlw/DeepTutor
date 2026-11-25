@@ -1,6 +1,5 @@
+import type { Translate } from '@/shared/i18n/translate'
 import { addDays, dateKey, formatDate, formatTime } from './dates'
-
-type Translate = (key: string, options?: Record<string, unknown>) => string
 
 /**
  * Reminder offsets are minutes before the start. All-day events start at

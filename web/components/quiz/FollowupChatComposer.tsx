@@ -13,6 +13,7 @@
  * very first send.
  */
 
+import type { Translate } from "@/shared/i18n/translate";
 import { memo, useCallback, useMemo } from "react";
 import { MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -48,7 +49,7 @@ const FOLLOWUP_CAPABILITIES = [
  *  read it, since that is the one thing that changes what to write. */
 export function followupPlaceholder(
   context: QuizFollowupTabContext,
-  t: (key: string, options?: Record<string, unknown>) => string,
+  t: Translate,
 ): string {
   const side = context.sideChat;
   if (!side) {

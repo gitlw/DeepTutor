@@ -1,5 +1,6 @@
 "use client";
 
+import type { Translate } from "@/shared/i18n/translate";
 import {
   useCallback,
   useEffect,
@@ -148,7 +149,7 @@ type ToolDescriptor = {
 function describeToolCall(
   toolName: string,
   args: Record<string, unknown> | undefined,
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
   provider?: ToolProvider | null,
 ): ToolDescriptor {
   const a = args ?? {};
@@ -336,7 +337,7 @@ function describeToolCall(
 
 function humanizeQuestionId(
   value: string,
-  t?: (key: string, opts?: Record<string, unknown>) => string,
+  t?: Translate,
 ) {
   return value.replace(/\bq_(\d+)\b/gi, (_match, n) =>
     t ? t("Question {{n}}", { n }) : `Question ${n}`,
@@ -345,7 +346,7 @@ function humanizeQuestionId(
 
 function getTraceLabel(
   events: StreamEvent[],
-  t?: (key: string, opts?: Record<string, unknown>) => string,
+  t?: Translate,
 ) {
   for (const event of events) {
     const meta = getTraceMeta(event);
@@ -372,7 +373,7 @@ export { getLatestToolProgress, getToolProvider } from "./selectors";
 function getTraceHeader(
   events: StreamEvent[],
   nested?: boolean,
-  t: (key: string, opts?: Record<string, unknown>) => string = (k) => k,
+  t: Translate = (k) => k,
 ) {
   const label = getTraceLabel(events, t);
   const role = getTraceRole(events);
@@ -1384,7 +1385,7 @@ function getResearchTopicIndex(meta: TraceMetadata): number | null {
 
 function getDeepResearchStatusLabel(
   events: StreamEvent[],
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
   isStreaming: boolean,
 ) {
   if (!isStreaming) return null;
@@ -1444,7 +1445,7 @@ function getDeepResearchStatusLabel(
 // bails as soon as a later (answer-phase) activity is seen.
 function getExploreContextStatusLabel(
   events: StreamEvent[],
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
   isStreaming: boolean,
 ) {
   if (!isStreaming) return null;
@@ -1474,7 +1475,7 @@ function getExploreContextStatusLabel(
 
 function getReasoningProgressStatusLabel(
   events: StreamEvent[],
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
   isStreaming: boolean,
 ) {
   if (!isStreaming) return null;

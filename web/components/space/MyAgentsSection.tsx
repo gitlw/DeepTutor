@@ -1,5 +1,6 @@
 "use client";
 
+import type { Translate } from '@/shared/i18n/translate'
 import { pageActionClass, pageGridClass } from '@/components/layout/FeaturePage'
 import Tooltip from "@/shared/ui/Tooltip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -77,7 +78,7 @@ type CardView =
 
 function scopeSummary(
   scope: AgentScope,
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
 ): string {
   if (scope.kind === "projects")
     return t("{{count}} projects", { count: scope.cwds.length });

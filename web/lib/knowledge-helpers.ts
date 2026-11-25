@@ -1,3 +1,4 @@
+import type { Translate } from "@/shared/i18n/translate";
 import type { TFunction } from "i18next";
 
 export interface KnowledgeUploadPolicy {
@@ -76,7 +77,7 @@ export interface ProgressInfo {
  */
 export function progressMessage(
   progress: Pick<ProgressInfo, "message" | "message_key" | "message_params">,
-  t: (key: string, options?: Record<string, unknown>) => string,
+  t: Translate,
 ): string | undefined {
   if (!progress.message_key) return progress.message;
   return t(progress.message_key, progress.message_params ?? {});

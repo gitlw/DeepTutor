@@ -1,5 +1,6 @@
 "use client";
 
+import type { Translate } from "@/shared/i18n/translate";
 import Tooltip from "@/shared/ui/Tooltip";
 import type { EmbeddingModelSelection } from "@/features/knowledge/model/types";
 
@@ -794,7 +795,7 @@ export default function CreateKbModal({
   );
 }
 
-type TFn = (key: string, options?: Record<string, unknown>) => string;
+type TFn = Translate;
 
 function ModeToggle({
   mode,

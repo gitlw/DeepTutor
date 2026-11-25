@@ -4,6 +4,7 @@ import type { LearningOrigin } from '@/lib/learning-library'
 import { apiFetch, apiUrl } from '@/lib/api'
 import { scopedUrl } from '@/lib/workspace-scope'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Translate as TranslateKey } from '@/shared/i18n/translate'
 
 import { SUBAGENT_KB_TYPE } from '@/lib/knowledge-helpers'
 import type { TopicSourceInput, TopicSourceKind } from '@/lib/learning-api'
@@ -100,11 +101,13 @@ type Translate = (cn: string, en: string, vars?: Record<string, string | number>
  * Chinese text as the key and showed English even in Chinese.
  */
 export function catalogTranslate(
-  t: (key: string, vars?: Record<string, string | number>) => string,
+  t: TranslateKey,
   zh: boolean
 ): Translate {
-  return (cn, en, vars) =>
-    zh ? cn.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(vars?.[name] ?? '')) : t(en, vars)
+  return (cn, en, vars) => {
+    if (zh) return cn.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(vars?.[name] ?? ''))
+    return vars ? t(en, vars) : t(en)
+  }
 }
 
 export function useTopicSourceLibrary(tr: Translate) {

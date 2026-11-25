@@ -8,9 +8,8 @@
  * the stable part of the contract, so the wording belongs here.
  */
 
+import type { Translate } from "@/shared/i18n/translate";
 import { BookApiError } from "@/lib/book-api";
-
-type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 const CODE_MESSAGES: Record<string, string> = {
   book_revision_conflict:

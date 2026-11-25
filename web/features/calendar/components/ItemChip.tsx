@@ -1,5 +1,6 @@
 'use client'
 
+import type { Translate } from '@/shared/i18n/translate'
 import { createElement, forwardRef, type CSSProperties, type HTMLAttributes } from 'react'
 import {
   AlarmClock,
@@ -21,7 +22,7 @@ const TASK_ICONS: Record<string, LucideIcon> = {
 
 export function itemTitle(
   item: CalendarItem,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: Translate
 ): string {
   if (item.kind === 'review') return t('{{count}} reviews due', { count: item.count })
   return item.title || t('(No title)')

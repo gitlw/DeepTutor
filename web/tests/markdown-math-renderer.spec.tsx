@@ -1,4 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import QuizBlock from "@/app/(workspace)/learning/books/components/blocks/QuizBlock";
@@ -9,6 +10,26 @@ import type { Block } from "@/lib/book-types";
 initI18n("zh");
 
 describe("math Markdown rendering", () => {
+  it.each(["$\\frac{1}{2}$", "$$\n\\sum_{n=1}^3 n\n$$"])(
+    "styles generated formulas with the installed KaTeX stylesheet: %s",
+    async (content) => {
+      const style = document.createElement("style");
+      style.textContent = readFileSync("node_modules/katex/dist/katex.min.css", "utf8");
+      document.head.append(style);
+      try {
+        const { container } = render(<MarkdownRenderer content={content} variant="prose" />);
+        await waitFor(() => expect(container.querySelector(".katex")).not.toBeNull());
+        const base = container.querySelector(".katex-html > span");
+        expect(base).not.toBeNull();
+        const layout = getComputedStyle(base!);
+        expect(layout.position).toBe("relative");
+        expect(layout.whiteSpace).toBe("nowrap");
+      } finally {
+        style.remove();
+      }
+    },
+  );
+
   it("renders the plain inline formulas from the reported chat response with KaTeX", async () => {
     const { container } = render(
       <MarkdownRenderer

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Translate } from "@/shared/i18n/translate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiUrl, wsUrl } from "@/lib/api";
 import {
@@ -33,7 +34,7 @@ export function taskStateAfterProgress(
   expectedTaskId: string | undefined,
   progress: ProgressInfo,
   /** Defaults to the key itself, i.e. the untranslated English. */
-  t: (key: string, options?: Record<string, unknown>) => string = (key) => key,
+  t: Translate = (key) => key,
 ): TaskState {
   const taskId = expectedTaskId || progress.task_id;
   if (taskId && current.taskId !== taskId) return current;

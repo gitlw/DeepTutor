@@ -22,7 +22,7 @@ const reviewableStatuses = new Set<LearningCapture["status"]>([
 
 function statusText(
   status: LearningCapture["status"],
-  t: (key: string, values?: any) => string,
+  t: (key: string) => string,
 ) {
   const map: Record<string, string> = {
     captured: t("Captured"),

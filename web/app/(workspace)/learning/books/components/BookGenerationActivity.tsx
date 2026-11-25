@@ -79,7 +79,7 @@ export default function BookGenerationActivity({
         spine,
         generation,
         progress,
-        t: (key, options) => t(key, options) as string,
+        t,
       }),
     [book, pages, spine, generation, progress, t],
   );

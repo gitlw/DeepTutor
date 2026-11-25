@@ -1,3 +1,4 @@
+import type { Translate } from "@/shared/i18n/translate";
 import { masterySessionsRoute } from "@/lib/learning-routes";
 /**
  * What a mastery conversation is doing right now — the client's half of
@@ -89,7 +90,7 @@ export const MASTERY_OPENING_SCOPE = "mastery_opening";
  */
 export function masteryOpeningMessage(
   mode: MasteryMode,
-  translate: (key: string, vars?: Record<string, unknown>) => string,
+  translate: Translate,
   options: { dueTitles?: string[] } = {},
 ): string {
   if (mode === "outline") {

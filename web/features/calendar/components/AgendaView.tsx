@@ -1,5 +1,6 @@
 'use client'
 
+import type { Translate } from '@/shared/i18n/translate'
 import type { CSSProperties } from 'react'
 import { CalendarSearch, CalendarX2, Repeat } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -159,7 +160,7 @@ export function AgendaView({
 
 export function footprintSummary(
   day: FootprintDay,
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: Translate
 ): string {
   const parts: string[] = []
   if (day.session_count) parts.push(t('{{count}} conversations', { count: day.session_count }))

@@ -1,3 +1,4 @@
+import type { Translate } from "@/shared/i18n/translate";
 /**
  * Naming a tool call that came from an external provider.
  *
@@ -89,7 +90,7 @@ export function describeProviderTool(
   toolName: string,
   args: Record<string, unknown> | undefined,
   provider: ToolProvider | null | undefined,
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: Translate,
 ): ProviderRow | null {
   if (!provider?.source) return null;
   if (provider.source === "mcp") {
